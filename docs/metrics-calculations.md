@@ -367,4 +367,53 @@ In practice, use **half-Kelly** (`f* / 2`) for safety — full Kelly is too aggr
 
 ---
 
+## Binance Indicator Analysis (Feb 2026)
+
+We tested **14 Binance 5-minute indicators** for predictive power on Polymarket streak reversals. All indicators were computed on Binance spot/futures data and correlated against whether a streak-3+ on Polymarket would reverse.
+
+### Indicators Tested
+
+| # | Indicator | Description |
+|---|-----------|-------------|
+| 1 | `rsi6` | RSI with 6-period lookback |
+| 2 | `rsi12` | RSI with 12-period lookback |
+| 3 | `roc3` | Rate of change, 3 periods |
+| 4 | `roc6` | Rate of change, 6 periods |
+| 5 | `atr6` | Average True Range, 6 periods |
+| 6 | `stddev6` | Standard deviation of close, 6 periods |
+| 7 | `obv_slope6` | On-Balance Volume slope, 6 periods |
+| 8 | `bb_pctb` | Bollinger Band %B |
+| 9 | `zscore12` | Z-score of price vs 12-period mean |
+| 10 | `vwap_dist` | Distance from VWAP |
+| 11 | `price_vs_ema12` | Price relative to 12-period EMA |
+| 12 | `body_ratio` | Candle body-to-range ratio |
+| 13 | `vol_ratio` | Volume vs average volume ratio |
+| 14 | `ema_cross` | EMA crossover signal |
+
+### Results: No Predictive Power
+
+**Every single indicator** had:
+- Correlation with reversal: |r| < 0.08
+- p-value: > 0.17 (none significant at p < 0.05)
+- AUC: 0.47 – 0.55 (barely different from random 0.50)
+
+### Per-Asset Best Indicators (All Non-Significant)
+
+| Asset | Best AUC Indicator | AUC | Correlation | p-value |
+|-------|-------------------|-----|-------------|---------|
+| BTC | atr6 | 0.534 | +0.011 | 0.823 |
+| ETH | roc6 | 0.555 | +0.002 | 0.978 |
+| XRP | atr6 | 0.522 | +0.057 | 0.300 |
+| SOL | atr6 | 0.515 | +0.024 | 0.657 |
+
+### Conclusion
+
+Standard technical indicators computed on Binance data have **zero statistically significant predictive power** for Polymarket 5-minute market streak reversals. The market is efficient at these timeframes — no simple indicator-based filter can reliably improve on coin-flip odds.
+
+### Backtest: Basic vs Enhanced (Indicator-Filtered)
+
+Adding a composite indicator filter (top-3 indicators per asset) improved win rates by ~2pp but halved trade volume, leaving total PnL unchanged or worse on some assets. See [Strategies Tested](strategies-tested.md#martingale-deep-dive-statistical-analysis-feb-2026) for full numbers.
+
+---
+
 *See also: [Binance WebSocket](binance-websocket.md) · [Strategies Tested](strategies-tested.md) · [Pitfalls](pitfalls.md)*

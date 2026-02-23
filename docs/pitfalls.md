@@ -103,6 +103,21 @@ Polymarket blocks access from many countries/regions. If you're in a restricted 
 - WebSocket connections are refused
 - The website itself is blocked
 
+### Geoblock Check Endpoint
+
+```
+GET https://polymarket.com/api/geoblock
+→ {"blocked": true, "ip": "...", "country": "US", "region": "NY"}
+```
+
+### Blocked Countries (as of Feb 2026)
+
+**Fully blocked**: US, AU, BE, BY, BI, CF, CD, CU, DE, ET, FR, GB, IR, IQ, IT, KP, LB, LY, MM, NI, NL, RU, SO, SS, SD, SY, UM, VE, YE, ZW
+
+**Close-only** (can close positions, cannot open new): PL, SG, TH, TW
+
+**Blocked regions**: Canada/Ontario, Ukraine (Crimea, Donetsk, Luhansk)
+
 ### The Fix
 
 Use a proxy in a non-restricted region.
@@ -110,11 +125,7 @@ Use a proxy in a non-restricted region.
 ```python
 import httpx
 
-# REST API through proxy
 client = httpx.Client(proxy="socks5://YOUR_PROXY_HOST:YOUR_PROXY_PORT")
-
-# WebSocket through proxy — requires additional setup
-# Use a SOCKS5-capable WebSocket library or tunnel
 ```
 
 ### Important Notes
@@ -284,6 +295,23 @@ Paper trading results are systematically more optimistic than live results.
 ### The Lesson
 
 Divide paper trading profits by **at least 3-5×** to estimate live performance. If your paper strategy isn't profitable by >3×, it will almost certainly lose money live.
+
+---
+
+## 9. Matching Engine Restarts
+
+The CLOB matching engine periodically restarts. During restarts:
+- Order placement returns **HTTP 425 (Too Early)**
+- Existing orders remain intact
+- Retry with exponential backoff until the engine is back
+
+**Handle this in your code**: Always catch 425 responses and retry.
+
+---
+
+## 10. Fee-Enabled Markets
+
+Since Jan-Feb 2026, some markets charge taker fees (5-min crypto, 15-min crypto, NCAAB, Serie A). If you don't include `feeRateBps` in your signed order, it will be rejected on fee-enabled markets. The SDKs handle this automatically — if using REST directly, always query `/fee-rate` first.
 
 ---
 

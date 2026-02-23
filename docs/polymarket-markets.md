@@ -163,12 +163,42 @@ For BTC 5-minute markets, Polymarket uses **Chainlink price feeds** on Polygon t
 
 Polymarket uses the **UMA Optimistic Oracle** for dispute resolution:
 
-1. An outcome is **proposed** by a bot or keeper
-2. There's a **challenge period** (usually short for BTC markets)
-3. If unchallenged, the proposed outcome is **finalized**
-4. If challenged, UMA's **DVM** (Data Verification Mechanism) votes on the outcome
+1. An outcome is **proposed** by anyone (posts ~$750 USDC.e bond)
+2. **2-hour challenge period** — anyone can dispute by posting counter-bond
+3. If unchallenged → proposal accepted, market resolves
+4. If 1st dispute → new proposal round. If 2nd dispute → escalates to **UMA DVM** token holder vote (~48h)
+
+### Resolution Timeline
+
+| Scenario | Duration |
+|----------|----------|
+| Undisputed | ~2 hours |
+| One dispute | ~4 days |
+| Two disputes (DVM vote) | ~4-6 days |
+
+### UMA Adapter Contracts (Polygon)
+
+| Version | Address |
+|---------|---------|
+| v3.0 | `0x157Ce2d672854c848c9b79C49a8Cc6cc89176a49` |
+| v2.0 | `0x6A9D222616C90FcA5754cd1333cFD9b7fb6a4F74` |
+| v1.0 | `0xCB1822859cEF82Cd2Eb4E6276C7916e692995130` |
+
+### Clarifications
+
+In rare cases, Polymarket may issue **"Additional context"** updates published onchain via the bulletin board contract. These cannot change the fundamental question but guide resolution.
 
 For 5-minute BTC markets, resolution is typically fast (under a minute) since outcomes are objective.
+
+## Sports Markets
+
+For sports markets, outstanding limit orders are **automatically cancelled** once the game begins. However, if a game starts earlier than scheduled, orders may not be cleared in time.
+
+Sports markets have a **3-second matching delay** for marketable orders (`delayed` status).
+
+## Holding Rewards
+
+Polymarket pays **4.00% annualized** Holding Rewards on total position value in eligible markets. Sampled randomly once per hour, distributed daily. Rate is variable.
 
 ---
 

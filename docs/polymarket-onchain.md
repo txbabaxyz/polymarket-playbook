@@ -17,10 +17,19 @@
 
 Polymarket runs on **Polygon PoS**. Outcome tokens follow the **Conditional Token Framework (CTF)** standard. All on-chain operations interact with CTF contracts on Polygon.
 
-Key contracts (verify on Polygonscan — addresses may update):
-- **CTF Exchange**: The main trading contract
-- **USDC**: Standard ERC-20 on Polygon (6 decimals)
-- **Conditional Tokens**: ERC-1155 tokens representing outcomes
+### Core Contract Addresses (Polygon Mainnet, Chain ID 137)
+
+| Contract | Address |
+|----------|---------|
+| **CTF Exchange** | `0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E` |
+| **Neg Risk CTF Exchange** | `0xC5d563A36AE78145C45a50134d48A1215220f80a` |
+| **Neg Risk Adapter** | `0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296` |
+| **Conditional Tokens (CTF)** | `0x4D97DCd97eC945f40cF65F87097ACe5EA0476045` |
+| **USDC.e (Bridged USDC)** | `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174` |
+| **Gnosis Safe Factory** | `0xaacfeea03eb1561c4e67d661e40682bd20e3541b` |
+| **Polymarket Proxy Factory** | `0xaB45c5A4B0c941a2F231C04C3f49182e1A254052` |
+| **UMA Adapter v2** | `0x6A9D222616C90FcA5754cd1333cFD9b7fb6a4F74` |
+| **Uniswap v3 USDC.e/USDC** | `0xd36ec33c8bed5a9f7b6630855f1533455b98a418` |
 
 ---
 
@@ -185,6 +194,54 @@ client = ClobClient(
 ### Common Issue
 
 Using the wrong `signature_type` causes orders to be rejected silently or with cryptic errors. If your orders aren't going through, try switching between 0 and 2.
+
+---
+
+## Negative Risk Markets
+
+Multi-outcome events use the **Neg Risk Adapter** for capital-efficient trading:
+
+- A **No share** in any market can be converted into **1 Yes share in every other market** in the event
+- This conversion is atomic through the Neg Risk Adapter contract
+- Orders on neg risk markets must specify `negRisk: true` / `neg_risk: True`
+
+### Identifying Neg Risk
+
+The Gamma API includes `negRisk` boolean on events/markets. For **augmented neg risk** (new outcomes can be added):
+```json
+{"enableNegRisk": true, "negRiskAugmented": true}
+```
+
+**Rule**: Only trade named outcomes in augmented neg risk — ignore placeholders until clarified.
+
+---
+
+## Gasless Transactions (Builder Program)
+
+Through the **Relayer Client**, Builder Program members can sponsor gas for users:
+
+- Wallet deployment, token approvals, CTF operations (split/merge/redeem), transfers
+- Users only need USDC.e — no POL required
+- Relayer endpoint: `https://relayer-v2.polymarket.com/`
+- Requires Builder API credentials for authentication
+
+---
+
+## Subgraph (On-Chain GraphQL)
+
+Polymarket subgraphs (hosted by Goldsky) provide indexed on-chain data:
+
+| Subgraph | Description |
+|----------|-------------|
+| Positions | User token balances |
+| Orders | Order book and trade events |
+| Activity | Splits, merges, redemptions, neg risk conversions |
+| Open Interest | Per-market and global OI |
+| PNL | User position P&L |
+
+Base endpoint: `https://api.goldsky.com/api/public/project_cl6mb8i9h0003e201j6li0diw/subgraphs/`
+
+Source: [github.com/Polymarket/polymarket-subgraph](https://github.com/Polymarket/polymarket-subgraph)
 
 ---
 

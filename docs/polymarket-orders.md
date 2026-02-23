@@ -58,7 +58,7 @@ print(f"Status: {resp['status']}")  # LIVE or MATCHED
 
 ## Batch Order Placement
 
-**The single biggest performance optimization.** Instead of placing orders one by one (each taking 0.5-1s), batch up to 100 orders in one HTTP call.
+**The single biggest performance optimization.** Instead of placing orders one by one (each taking 0.5-1s), batch up to **15 orders** (official API limit) in one HTTP call.
 
 ```python
 # Create multiple signed orders

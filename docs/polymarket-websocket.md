@@ -22,12 +22,14 @@
 
 ## Overview
 
-Polymarket provides two WebSocket channels:
+Polymarket provides four WebSocket channels:
 
-| Channel | URL | Purpose |
-|---------|-----|---------|
-| **Market** | `wss://ws-subscriptions-clob.polymarket.com/ws/market` | Order book snapshots, price changes |
-| **User** | `wss://ws-subscriptions-clob.polymarket.com/ws/user` | Your order fills, placements, cancellations |
+| Channel | URL | Auth | Purpose |
+|---------|-----|------|---------|
+| **Market** | `wss://ws-subscriptions-clob.polymarket.com/ws/market` | No | Order book snapshots, price changes, market events |
+| **User** | `wss://ws-subscriptions-clob.polymarket.com/ws/user` | Yes | Your order fills, placements, cancellations |
+| **Sports** | `wss://sports-api.polymarket.com/ws` | No | Live sports scores and game state |
+| **RTDS** | `wss://ws-live-data.polymarket.com` | Optional | Real-time comments and crypto prices |
 
 ---
 
@@ -47,16 +49,36 @@ After connecting, send a subscription message:
 
 ```json
 {
+  "assets_ids": ["TOKEN_ID_UP", "TOKEN_ID_DN"],
   "type": "market",
-  "assets_id": ["TOKEN_ID_UP", "TOKEN_ID_DN"]
+  "custom_feature_enabled": true
 }
 ```
 
-You can subscribe to multiple token IDs. Each token ID represents one side of a binary market.
+**Note**: The field is `assets_ids` (plural), not `assets_id`. Set `custom_feature_enabled: true` to receive `best_bid_ask`, `new_market`, and `market_resolved` events.
+
+### Dynamic Subscription (Without Reconnecting)
+
+```json
+{"assets_ids": ["new_id"], "operation": "subscribe", "custom_feature_enabled": true}
+{"assets_ids": ["old_id"], "operation": "unsubscribe"}
+```
+
+### Message Types
+
+| Type | Trigger | Description |
+|------|---------|-------------|
+| `book` | On subscribe + on trade | Full orderbook snapshot |
+| `price_change` | New order or cancellation | Price level updates |
+| `tick_size_change` | Price > 0.96 or < 0.04 | Tick size changed |
+| `last_trade_price` | Maker/taker matched | Trade execution with price, size, side |
+| `best_bid_ask` | Best prices change | Best bid/ask + spread (requires custom_feature) |
+| `new_market` | New market created | Market details + event info (requires custom_feature) |
+| `market_resolved` | Market resolved | Winning asset/outcome (requires custom_feature) |
 
 ### Book Event
 
-Full order book snapshot. Sent on subscription and periodically.
+Full order book snapshot. Sent on subscription and after trades.
 
 ```json
 {
@@ -64,30 +86,67 @@ Full order book snapshot. Sent on subscription and periodically.
   "asset_id": "TOKEN_ID_UP",
   "market": "CONDITION_ID",
   "bids": [
-    {"price": "0.52", "size": "100.0"},
-    {"price": "0.51", "size": "250.0"}
+    {"price": ".48", "size": "30"},
+    {"price": ".49", "size": "20"}
   ],
   "asks": [
-    {"price": "0.53", "size": "150.0"},
-    {"price": "0.54", "size": "200.0"}
+    {"price": ".52", "size": "25"},
+    {"price": ".53", "size": "60"}
   ],
-  "timestamp": "1700000000",
+  "timestamp": "123456789000",
   "hash": "0x..."
 }
 ```
 
 ### Price Change Event
 
-Lightweight update when best bid/ask changes.
+Emitted when a new order is placed or cancelled. A `size` of `"0"` means the price level was removed.
 
 ```json
 {
   "event_type": "price_change",
-  "asset_id": "TOKEN_ID_UP",
-  "price": "0.525",
-  "side": "buy",
-  "size": "75.0",
-  "timestamp": "1700000001"
+  "market": "0x...",
+  "price_changes": [
+    {
+      "asset_id": "TOKEN_ID",
+      "price": "0.5",
+      "size": "200",
+      "side": "BUY",
+      "hash": "...",
+      "best_bid": "0.5",
+      "best_ask": "1"
+    }
+  ],
+  "timestamp": "1757908892351"
+}
+```
+
+### Last Trade Price Event
+
+```json
+{
+  "event_type": "last_trade_price",
+  "asset_id": "TOKEN_ID",
+  "market": "0x...",
+  "price": "0.456",
+  "side": "BUY",
+  "size": "219.217767",
+  "fee_rate_bps": "0",
+  "timestamp": "1750428146322"
+}
+```
+
+### Market Resolved Event (Custom Feature)
+
+```json
+{
+  "event_type": "market_resolved",
+  "id": "1031769",
+  "question": "Will NVIDIA close above $240?",
+  "market": "0x...",
+  "winning_asset_id": "TOKEN_ID",
+  "winning_outcome": "Yes",
+  "timestamp": "1766790415550"
 }
 ```
 
@@ -144,11 +203,24 @@ Requires authentication headers (same as REST API L2 auth).
 
 ```json
 {
-  "type": "subscribe",
-  "channel": "user",
-  "markets": ["CONDITION_ID_1", "CONDITION_ID_2"]
+  "auth": {
+    "apiKey": "your-api-key",
+    "secret": "your-api-secret",
+    "passphrase": "your-passphrase"
+  },
+  "markets": ["CONDITION_ID_1", "CONDITION_ID_2"],
+  "type": "user"
 }
 ```
+
+**Note**: User channel subscribes by **condition IDs** (not asset IDs). Dynamic subscribe/unsubscribe uses `"markets"` field with `"operation"` key.
+
+### User Events
+
+| Type | Subtypes | Description |
+|------|----------|-------------|
+| `trade` | MATCHED → MINED → CONFIRMED (or RETRYING → FAILED) | Trade lifecycle |
+| `order` | PLACEMENT, UPDATE, CANCELLATION | Order events |
 
 ### User Events
 
@@ -227,9 +299,15 @@ async def connect_with_reconnect(url, subscribe_msg, handler):
             backoff = min(backoff * 2, max_backoff)
 ```
 
+### Heartbeat / Keepalive
+
+**Market & User channels**: Send `PING` every 10 seconds; server responds with `PONG`.
+
+**Sports channel**: Server sends `ping` every 5 seconds; respond with `pong` within 10 seconds or get disconnected.
+
 ### Key Points
 
-- Set `ping_interval=20` and `ping_timeout=10` for keepalive
+- Send `PING` every 10s for market/user channels (not WebSocket ping frames — literal text `PING`)
 - Use exponential backoff on reconnection (cap at 60s)
 - Re-subscribe after reconnection — subscriptions are not persisted
 - Preserve local state (book tracker, order tracker) across reconnections

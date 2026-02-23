@@ -209,6 +209,59 @@ The v3 engine was the most rigorous approach. Its conclusion:
 
 ---
 
+## Martingale Deep-Dive: Statistical Analysis (Feb 2026)
+
+Comprehensive backtest on real Polymarket 5-minute crypto markets using Binance data.
+
+### Dataset
+
+| Asset | Markets Analyzed | Streak-3+ Events | Base Reversal Rate |
+|-------|-----------------|-------------------|-------------------|
+| BTC | 2,014 | 447 | 53.9% |
+| XRP | 1,431 | 336 | 57.7% |
+| ETH | 1,432 | 308 | 57.1% |
+| SOL | 1,432 | 340 | 52.4% |
+
+### BTC 7-Day Streak Distribution (449 markets)
+
+- UP outcomes: 234 (52.1%), DN outcomes: 215 (47.9%)
+- Max same-side streak: **7** (UP)
+- Max alternating streak: **12**
+
+### Runs Test Findings
+
+All four assets showed p-values > 0.05 on the Runs Test, meaning **outcomes are statistically indistinguishable from random coin flips**. There is no exploitable serial correlation.
+
+### Martingale N=2 through N=8
+
+Martingale was tested at various depth levels (N = max consecutive doublings). Higher N means higher max exposure but more recovery potential. Results:
+
+- At N=4 (max $750 at risk): ~6% probability of 4 consecutive losses
+- At N=8: Theoretical max exposure exceeds practical bankroll
+- **Conclusion**: Martingale on near-random 50/50 outcomes is a guaranteed path to ruin with finite bankroll
+
+### Binance Indicator Enhancement Attempt
+
+14 Binance indicators were tested to filter martingale entries. See [Metrics & Calculations](metrics-calculations.md#binance-indicator-analysis) for full results.
+
+**Summary**: Adding indicator filters improved win rate by +1.3pp to +2.6pp but **halved trade count** and did not produce statistically significant edge. All p-values > 0.05.
+
+| Asset | Basic WR | Enhanced WR | Improvement | Basic PnL | Enhanced PnL |
+|-------|----------|-------------|-------------|-----------|-------------|
+| BTC | 54.2% | 56.5% | +2.3pp | +74.6 | +91.3 |
+| ETH | 57.1% | 59.7% | +2.6pp | +98.8 | +37.1 |
+| XRP | 57.7% | 59.1% | +1.3pp | +145.6 | +77.0 |
+| SOL | 52.4% | 54.3% | +2.0pp | -38.9 | +36.3 |
+
+### Binance vs Polymarket Outcome Comparison
+
+Cross-referencing Binance price data with Polymarket resolutions:
+- **97-98% match rate** between Binance-derived outcomes and Polymarket resolutions
+- **2-3% discrepancy** caused by Chainlink oracle timing differences — Polymarket uses Chainlink (not Binance) for reference/final prices
+- Discrepancies cluster around periods of rapid price movement near market open/close boundaries
+
+---
+
 ## Key Lessons
 
 ### 1. Paper Trading Is a Lie
