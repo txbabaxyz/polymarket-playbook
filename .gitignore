@@ -1,0 +1,41 @@
+# Environment & secrets
+.env
+.env.*
+*.key
+*.pem
+*.secret
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & data
+*.log
+*.jsonl
+*.csv
+logs/
+data/
+
+# Node
+node_modules/
